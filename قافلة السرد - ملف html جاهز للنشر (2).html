@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>قافلة السرد الشهري</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;background:#f5f5f5;direction:rtl;min-height:100vh}
+  .wrap{max-width:680px;margin:0 auto;padding:1rem}
+  .header{text-align:center;padding:1rem 0 .5rem}
+  .header h1{font-size:20px;font-weight:700;margin:4px 0}
+  .status{display:flex;align-items:center;justify-content:center;gap:6px;font-size:12px;color:#666;margin-top:4px}
+  .dot{width:8px;height:8px;border-radius:50%;background:#1D9E75;display:inline-block;flex-shrink:0}
+  .tabs{display:flex;gap:4px;background:#e8e8e8;border-radius:10px;padding:4px;margin:12px 0}
+  .tab{flex:1;padding:8px 4px;border-radius:8px;border:none;cursor:pointer;font-family:Arial;font-size:13px;background:transparent;color:#777;font-weight:400}
+  .tab.active{background:#fff;border:1px solid #ddd;color:#333;font-weight:600}
+  .card{background:#fff;border:1px solid #e8e8e8;border-radius:12px;padding:.9rem 1rem;margin-bottom:8px}
+  .badge{font-size:12px;border-radius:20px;padding:2px 10px;border:1px solid}
+  input,select,textarea{width:100%;padding:9px 11px;border-radius:8px;border:1px solid #ccc;font-size:15px;font-family:Arial;background:#fff}
+  textarea{resize:vertical}
+  label{font-size:13px;color:#555;display:block;margin-bottom:4px}
+  .field{margin-bottom:10px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+  .btn{border:none;border-radius:8px;padding:10px 24px;cursor:pointer;font-family:Arial;font-size:15px;font-weight:600;color:#fff;background:#7F77DD}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn-ghost{background:#f5f5f5;color:#555;border:1px solid #ddd}
+  .btn-sm{font-size:13px;padding:7px 16px}
+  .btn-icon{background:transparent;border:1px solid #ddd;border-radius:7px;padding:5px 8px;cursor:pointer;font-size:13px}
+  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:999;color:#fff;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:600;box-shadow:0 4px 20px #0004;display:none}
+  .form-box{background:#fff;border:1px solid #e0e0e0;border-radius:14px;padding:1.25rem;margin-bottom:1rem}
+  .empty{text-align:center;padding:3rem 0;color:#888}
+  .empty div{font-size:36px;margin-bottom:8px}
+  .sat-card{background:#fff;border-radius:14px;padding:1rem 1.25rem;margin-bottom:12px}
+  .bar-bg{background:#f0f0f0;border-radius:4px;height:5px;margin-top:2px}
+  .bar{height:5px;border-radius:4px}
+  table{width:100%;border-collapse:collapse}
+  th{padding:10px 12px;text-align:right;font-size:13px;font-weight:600;color:#555;background:#f8f8f8}
+  td{padding:10px 12px;font-size:14px;border-top:1px solid #f0f0f0}
+  .search-row{display:flex;gap:8px;margin-bottom:10px}
+  .search-row input{flex:1}
+  .search-row select{width:auto}
+  .top-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  @media(max-width:480px){.grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div style="font-size:28px">📖</div>
+    <h1>قافلة السرد الشهري</h1>
+    <div class="status">
+      <span class="dot" id="dot"></span>
+      <span id="statusTxt">جارٍ التحميل...</span>
+      <button onclick="load()" style="background:none;border:none;cursor:pointer;font-size:13px">🔄</button>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('list',this)">📋 السجلات</button>
+    <button class="tab" onclick="switchTab('add',this)">➕ إضافة</button>
+    <button class="tab" onclick="switchTab('sat',this)">🏆 التصنيف</button>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <!-- LIST -->
+  <div id="view-list">
+    <div class="search-row">
+      <input type="text" id="search" placeholder="🔍 بحث..." oninput="renderList()"/>
+      <select id="fCity" onchange="renderList()"><option value="all">كل المدن</option></select>
+    </div>
+    <div class="top-row">
+      <span id="countTxt" style="font-size:13px;color:#666"></span>
+      <button class="btn btn-sm" onclick="switchTab('add',document.querySelectorAll('.tab')[1])">➕ إضافة سجل</button>
+    </div>
+    <div id="listContainer"></div>
+  </div>
+
+  <!-- ADD/EDIT -->
+  <div id="view-add" style="display:none">
+    <div class="form-box">
+      <h2 id="formTitle" style="font-size:16px;font-weight:600;margin-bottom:14px">سجل جديد</h2>
+      <div class="grid2">
+        <div class="field"><label>التاريخ *</label><input type="date" id="fDate"/></div>
+        <div class="field"><label>اسم الطالب/ة *</label><input type="text" id="fName" placeholder="الاسم الكامل"/></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>المدينة *</label>
+          <select id="fCityForm"><option value="">اختر...</option></select>
+        </div>
+        <div class="field"><label>النتيجة *</label>
+          <select id="fResult">
+            <option value="">اختر...</option>
+            <option>ممتاز</option><option>جيد جداً</option><option>جيد</option><option>مقبول</option><option>ضعيف</option>
+          </select>
+        </div>
+      </div>
+      <div class="field"><label>ملاحظة / السؤال</label><textarea id="fNote" rows="3" placeholder="اختياري..."></textarea></div>
+      <div style="display:flex;gap:8px;margin-top:4px">
+        <button class="btn" id="submitBtn" onclick="submit()">إضافة ✓</button>
+        <button class="btn btn-ghost" onclick="cancelForm()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SATURDAY -->
+  <div id="view-sat" style="display:none">
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:28px">🏆</div>
+      <h2 style="font-size:17px;font-weight:700;margin:4px 0 2px">التصنيف السبتي العام</h2>
+      <p id="satSubtitle" style="font-size:12px;color:#888"></p>
+    </div>
+    <div id="satContainer"></div>
+    <div id="satTable"></div>
+  </div>
+</div>
+
+<script>
+const SB_URL = "https://vxgdlenbqulgyrxspbiz.supabase.co/rest/v1";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ4Z2RsZW5icXVsZ3lyeHNwYml6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNTQ2MjYsImV4cCI6MjA5NTczMDYyNn0.Rpx9HqsTbHBADmOHXColk0ByBCzI5ys04iVBnIgUBWY";
+const H = {"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json"};
+
+const CITIES=["الرباط","الدار البيضاء","فاس","مراكش","طنجة","مكناس","أكادير","وجدة","القنيطرة","تطوان","سلا","الجديدة","بني ملال","خريبكة","العرائش","سطات","تازة","الناظور","خنيفرة","إنزكان","أسفي","الراشيدية","تيزنيت","الحسيمة","بركان"];
+const RC={"ممتاز":"#1D9E75","جيد جداً":"#7F77DD","جيد":"#185FA5","مقبول":"#BA7517","ضعيف":"#E24B4A"};
+const COLORS=["#7F77DD","#1D9E75","#D85A30","#185FA5","#BA7517","#993556","#639922","#2B8C8C","#8C5A2B","#5A2B8C"];
+const cc=c=>COLORS[Math.abs([...(c||"x")].reduce((a,x)=>a+x.charCodeAt(0),0))%COLORS.length];
+
+let records=[], editId=null, currentTab="list";
+
+// Fill city selects
+CITIES.forEach(c=>{
+  document.getElementById("fCityForm").innerHTML+=`<option value="${c}">${c}</option>`;
+});
+
+function toast(msg,ok=true){
+  const t=document.getElementById("toast");
+  t.textContent=msg; t.style.background=ok?"#1D9E75":"#E24B4A"; t.style.display="block";
+  setTimeout(()=>t.style.display="none",3500);
+}
+
+function setStatus(txt,loading=false){
+  document.getElementById("statusTxt").textContent=txt;
+  document.getElementById("dot").style.background=loading?"#BA7517":"#1D9E75";
+}
+
+async function load(){
+  setStatus("جارٍ التحميل...",true);
+  try{
+    const r=await fetch(`${SB_URL}/records?order=addedat.desc`,{headers:H});
+    if(!r.ok) throw new Error(await r.text());
+    records=await r.json();
+    setStatus(`${records.length} سجل · مشترك بين جميع الأساتذة`);
+    renderList(); renderSat(); fillCityFilter();
+  }catch(e){ setStatus("خطأ في التحميل",false); toast("❌ "+e.message,false); }
+}
+
+function fillCityFilter(){
+  const sel=document.getElementById("fCity");
+  const cities=[...new Set(records.map(r=>r.city))].filter(Boolean).sort();
+  const cur=sel.value;
+  sel.innerHTML='<option value="all">كل المدن</option>';
+  cities.forEach(c=>sel.innerHTML+=`<option value="${c}">${c}</option>`);
+  sel.value=cur;
+}
+
+function renderList(){
+  const s=document.getElementById("search").value;
+  const fc=document.getElementById("fCity").value;
+  const filtered=records.filter(r=>{
+    const name=r.studentname||"";
+    return (fc==="all"||r.city===fc)&&(!s.trim()||name.includes(s)||r.city.includes(s));
+  });
+  document.getElementById("countTxt").textContent=filtered.length+" سجل";
+  const c=document.getElementById("listContainer");
+  if(!filtered.length){c.innerHTML='<div class="empty"><div>📭</div><p>لا توجد سجلات</p></div>';return;}
+  c.innerHTML=filtered.map(rec=>{
+    const name=rec.studentname||"";
+    const col=cc(rec.city);
+    const rc=RC[rec.result]||"#888";
+    return `<div class="card" style="border-right:4px solid ${col}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">
+            <span style="font-weight:700;font-size:15px">${name}</span>
+            <span class="badge" style="color:${col};background:${col}22;border-color:${col}44">${rec.city}</span>
+            <span class="badge" style="color:${rc};background:${rc}22;border-color:${rc}44">${rec.result}</span>
+          </div>
+          <div style="font-size:12px;color:#888">📅 ${rec.date}</div>
+          ${rec.question?`<div style="font-size:13px;color:#444;margin-top:4px;line-height:1.5">💬 ${rec.question}</div>`:""}
+        </div>
+        <div style="display:flex;gap:5px;margin-right:8px;flex-shrink:0">
+          <button class="btn-icon" onclick="startEdit('${rec.id}')">✏️</button>
+          <button class="btn-icon" style="border-color:#E24B4A44" onclick="remove('${rec.id}')">🗑</button>
+        </div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function renderSat(){
+  const byCity={};
+  records.forEach(r=>{
+    const name=r.studentname||"";
+    if(!r.city)return;
+    if(!byCity[r.city])byCity[r.city]={};
+    byCity[r.city][name]=(byCity[r.city][name]||0)+1;
+  });
+  const sat=Object.entries(byCity).map(([city,sts])=>({
+    city,total:Object.values(sts).reduce((s,x)=>s+x,0),
+    students:Object.entries(sts).map(([name,count])=>({name,count})).sort((a,b)=>b.count-a.count)
+  })).sort((a,b)=>b.total-a.total);
+
+  document.getElementById("satSubtitle").textContent=`تصنيف حسب المدينة · ${records.length} سجل`;
+
+  const medals=["🥇","🥈","🥉"];
+  document.getElementById("satContainer").innerHTML=sat.map((g,ci)=>{
+    const col=cc(g.city);
+    return `<div class="sat-card" style="border:1px solid ${col}33;border-right:4px solid ${col}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:22px">${medals[ci]||"📍"}</span>
+          <div><div style="font-weight:700;font-size:15px;color:${col}">${g.city}</div>
+          <div style="font-size:12px;color:#888">${g.students.length} طالب/ة · ${g.total} مشاركة</div></div>
+        </div>
+        <span style="font-size:24px;font-weight:700;color:${col}">${g.total}</span>
+      </div>
+      ${g.students.map((st,si)=>`
+        <div style="margin-bottom:6px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+            <span style="font-size:13px"><span style="color:#bbb;margin-left:6px">${si+1}</span>${st.name}</span>
+            <span style="font-size:13px;font-weight:600;color:${col}">${st.count} ✓</span>
+          </div>
+          <div class="bar-bg"><div class="bar" style="width:${Math.round(st.count/g.total*100)}%;background:${col}"></div></div>
+        </div>`).join("")}
+    </div>`;
+  }).join("");
+
+  if(sat.length){
+    document.getElementById("satTable").innerHTML=`
+      <div style="background:#fff;border:1px solid #e0e0e0;border-radius:12px;overflow:hidden;margin-top:16px">
+        <table><thead><tr>${["#","المدينة","الطلاب","المشاركات"].map(h=>`<th>${h}</th>`).join("")}</tr></thead>
+        <tbody>${sat.map((g,i)=>`<tr>
+          <td>${medals[i]||i+1}</td>
+          <td style="font-weight:600;color:${cc(g.city)}">${g.city}</td>
+          <td style="text-align:center">${g.students.length}</td>
+          <td style="text-align:center;font-weight:700;color:${cc(g.city)}">${g.total}</td>
+        </tr>`).join("")}</tbody></table>
+      </div>`;
+  }
+}
+
+function switchTab(name, btn){
+  currentTab=name;
+  document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.querySelectorAll("[id^='view-']").forEach(v=>v.style.display="none");
+  document.getElementById("view-"+name).style.display="block";
+  if(name==="add"&&!editId){ clearForm(); document.getElementById("formTitle").textContent="سجل جديد"; document.getElementById("submitBtn").textContent="إضافة ✓"; }
+}
+
+function clearForm(){
+  ["fDate","fName","fNote"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("fCityForm").value="";
+  document.getElementById("fResult").value="";
+  editId=null;
+}
+
+function cancelForm(){ clearForm(); switchTab("list",document.querySelectorAll(".tab")[0]); }
+
+function startEdit(id){
+  const rec=records.find(r=>r.id===id); if(!rec)return;
+  editId=id;
+  document.getElementById("fDate").value=rec.date||"";
+  document.getElementById("fName").value=rec.studentname||"";
+  document.getElementById("fCityForm").value=rec.city||"";
+  document.getElementById("fResult").value=rec.result||"";
+  document.getElementById("fNote").value=rec.question||"";
+  document.getElementById("formTitle").textContent="تعديل السجل";
+  document.getElementById("submitBtn").textContent="حفظ التعديل";
+  switchTab("add",document.querySelectorAll(".tab")[1]);
+}
+
+async function submit(){
+  const date=document.getElementById("fDate").value;
+  const studentname=document.getElementById("fName").value.trim();
+  const city=document.getElementById("fCityForm").value;
+  const result=document.getElementById("fResult").value;
+  const question=document.getElementById("fNote").value.trim();
+  if(!date||!studentname||!city||!result){toast("⚠️ يرجى ملء جميع الحقول",false);return;}
+  const btn=document.getElementById("submitBtn");
+  btn.disabled=true; btn.textContent="جارٍ الحفظ...";
+  try{
+    if(editId){
+      const r=await fetch(`${SB_URL}/records?id=eq.${editId}`,{method:"PATCH",headers:{...H,"Prefer":"return=minimal"},body:JSON.stringify({date,studentname,city,result,question})});
+      if(!r.ok) throw new Error(await r.text());
+      toast("✅ تم تعديل السجل");
+    } else {
+      const rec={id:Date.now().toString(),date,studentname,city,result,question,addedat:new Date().toISOString()};
+      const r=await fetch(`${SB_URL}/records`,{method:"POST",headers:{...H,"Prefer":"return=minimal"},body:JSON.stringify(rec)});
+      if(!r.ok) throw new Error(await r.text());
+      toast("✅ تم إضافة السجل");
+    }
+    clearForm(); switchTab("list",document.querySelectorAll(".tab")[0]); load();
+  }catch(e){ toast("❌ خطأ: "+e.message,false); }
+  btn.disabled=false; btn.textContent=editId?"حفظ التعديل":"إضافة ✓";
+}
+
+async function remove(id){
+  if(!confirm("حذف هذا السجل؟"))return;
+  try{
+    const r=await fetch(`${SB_URL}/records?id=eq.${id}`,{method:"DELETE",headers:H});
+    if(!r.ok) throw new Error(await r.text());
+    records=records.filter(x=>x.id!==id); renderList(); renderSat(); fillCityFilter(); toast("تم الحذف");
+  }catch(e){ toast("❌ خطأ في الحذف",false); }
+}
+
+load();
+setInterval(load,20000);
+</script>
+</body>
+</html>
